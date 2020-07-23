@@ -1,0 +1,61 @@
+ sudo docker stop docker_web_1
+ sudo docker rm docker_web_1
+ sudo docker rmi docker_web
+ sudo docker-compose up -d
+
+
+     curl -iX POST \
+  --url 'http://localhost:1026/v2/op/update' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "actionType":"append",
+  "entities":[
+    {
+      "id":"WaterStation:1", "type":"WaterStation",
+	"orp":{"type":"Double", "value":100},
+	"dateModified":{"type":"DateTime", "value":"2020-09-03T11:45:00"}
+    }]}'
+
+'''
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+
+  redis:
+    image: "redis:alpine"
+     '''
+     
+     curl  -iX PATCH \
+     --url 'http://localhost:1026/v2/subscriptions/5effbafe311e948d818f90bb' \
+--header 'Content-Type: application/json' \
+--data '{
+
+        "description": "Change ph ",
+        "subject": {
+            "entities": [
+            {
+                "idPattern": "WaterStation:1",
+                "type": "WaterStation"
+            }
+            ],
+            "condition": {
+                "attrs": [
+                "ph"
+                ]
+            }
+        },
+        "notification": {
+            "http": {
+            	"url":"http://quantumleap:8668/v2/notify"
+            	},
+            	
+            "attrs": [
+            "ph","dateModified"
+            ],
+            "metadata": ["dateModified"]
+        },
+        "throttling": 5
+}'
+
+"http://quantumleap:8668/v2/notify"
