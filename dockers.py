@@ -1,5 +1,5 @@
 import redis 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import time
 import json
 import csv
@@ -47,12 +47,12 @@ def control_threshold(data,header):
 					#leggo il file my_ip.txt per avere il valore di ip corretto da testare nella funzione
 					f=open("my_ip.txt","r")
 					my_ip=f.read()
-					f.close
+					
 					
 					if (dati1[0][p] not in data[n]['subject']['condition']['expression']['q'] or data[n]['notification']['http']['url']!=my_ip):
 						
 						#modify new sub
-						url = f"http://docker_orion_1:1026/v2/subscriptions/{data[n]['id']}"
+						url = f"http://tirociniofiware_orion_1:1026/v2/subscriptions/{data[n]['id']}"
 						payload = f"{{\"description\":\"Notify me of Overcoming threshold {header[n]} parameter in WaterStation:1\",\"subject\": {{\"entities\": [{{\"idPattern\": \"WaterStation:1\", \"type\": \"WaterStation\"}}],\"condition\": {{\"attrs\": [\"{header[n]}\"],\"expression\": {{\"q\": \"{header[n]} > {dati1[0][p]}\"}}}}}},\"notification\": {{\"http\": {{\"url\": \"{my_ip}\"}},\"attrs\":[\"{header[n]}\",\"dateModified\"],\"metadata\":[\"dateModified\"]}},\"throttling\": 5}}"
 						y=json.loads(payload)
 						payload=json.dumps(y)
@@ -76,7 +76,7 @@ def control_threshold(data,header):
 #la funzione control_threshold  ha uno scopo di manipolazione del dato quindi ho preferito
 #svilupparlo alternativamente senza l'utilizzo di questa funzione
 def get_sub(timesSent,header):
-	url = "http://docker_orion_1:1026/v2/subscriptions"
+	url = "http://tirociniofiware_orion_1:1026/v2/subscriptions"
 	#Prendiamo già tutto il data inerente alle subs
 	#data= tutte le sub che ho
 
@@ -130,7 +130,7 @@ def case_post(timesSent,timesSent1,data):
 					if name_param==data[n]['subject']['condition']['attrs'][0]:
 						
 						#dal db di crate ottengo gli utlimi n parametri, definiti sempre nel file di threshold
-						connection=client.connect("http://docker_crate_1:4200/#!/tables/doc/etwaterstation")
+						connection=client.connect("http://tirociniofiware_crate_1:4200/#!/tables/doc/etwaterstation")
 						cursor = connection.cursor()
 						cursor.execute(f"SELECT \"time_index\",\"{name_param}\" FROM \"doc\".\"etwaterstation\" where \"{name_param}\">0 order by \"time_index\" desc limit {counter[header1.index(name_param)]};")
 						parametri= cursor.fetchall()
@@ -142,7 +142,7 @@ def case_post(timesSent,timesSent1,data):
 						
 						
 						#per prevenire eliminiamo il wait di uscita dall'alert per poi reinserirlo se il trend viene confermato
-						url=f"http://docker_orion_1:1026/v2/entities/WaterStation:1/attrs/Wait_{name_param}_Exit_Alert"
+						url=f"http://tirociniofiware_orion_1:1026/v2/entities/WaterStation:1/attrs/Wait_{name_param}_Exit_Alert"
 						response = requests.request("DELETE", url)
 					
 						#HP che ogni minuto ricevo sempre un nuovo paramentro, se no avrei valori ipoteticamente inutili  poichè distanti
@@ -166,7 +166,7 @@ def case_post(timesSent,timesSent1,data):
 
 							#Pubblichiamo un alert
 							
-							url = "http://docker_orion_1:1026/v2/op/update"
+							url = "http://tirociniofiware_orion_1:1026/v2/op/update"
 							payload = f"{{\"actionType\":\"APPEND\",\"entities\":[{{\"id\": \"WaterStation:1\", \"type\":\"WaterStation\",\"Alert{name_param}\":{{\"type\":\"Text\",\"value\":\"{alert_list[len(alert_list)-1]}\",\"metadata\":{{\"dateModified\":{{\"type\":\"DateTime\",\"value\":\"{dateModified}\"}}}}}}}}]}}"
 							y=json.loads(payload)
 							payload=json.dumps(y)
@@ -178,7 +178,7 @@ def case_post(timesSent,timesSent1,data):
 						else:
 						
 							#delete dell'alert perchè sicuramente se siamo entrati in questa condizione vuol dire che non siamo in condizione di alert
-							url=f"http://docker_orion_1:1026/v2/entities/WaterStation:1/attrs/Alert{data[n]['subject']['condition']['attrs'][0]}"
+							url=f"http://tirociniofiware_orion_1:1026/v2/entities/WaterStation:1/attrs/Alert{data[n]['subject']['condition']['attrs'][0]}"
 							response = requests.request("DELETE", url)
 							cont_right=0
 							
@@ -193,7 +193,7 @@ def case_post(timesSent,timesSent1,data):
 									cont_right=-1
 								
 									alert_list.append(f"Waiting for the {name_param} to stabilize.")
-									url = "http://docker_orion_1:1026/v2/op/update"
+									url = "http://tirociniofiware_orion_1:1026/v2/op/update"
 									payload = f"{{\"actionType\":\"APPEND\",\"entities\":[{{\"id\": \"WaterStation:1\", \"type\":\"WaterStation\",\"Wait_{name_param}_Exit_Alert\":{{\"type\":\"Text\",\"value\":\"{alert_list[len(alert_list)-1]}\",\"metadata\":{{\"dateModified\":{{\"type\":\"DateTime\",\"value\":\"{dateModified}\"}}}}}}}}]}}"
 
 									y=json.loads(payload)
@@ -231,7 +231,7 @@ def create_wait_alert(header):
 		counter=dati1[2]
 		counter_exit=dati1[3]
 		for name_param in header1:
-			connection=client.connect("http://docker_crate_1:4200/#!/tables/doc/etwaterstation")
+			connection=client.connect("http://tirociniofiware_crate_1:4200/#!/tables/doc/etwaterstation")
 			cursor = connection.cursor()
 			cursor.execute(f"SELECT \"time_index\",\"{name_param}\" FROM \"doc\".\"etwaterstation\" where \"{name_param}\">0 order by \"time_index\" desc limit {counter[header1.index(name_param)]};")
 			parametri= cursor.fetchall()
@@ -243,7 +243,7 @@ def create_wait_alert(header):
 			
 			cont_right=0
 			if int(parametri[0][1]) < int(threshold[header1.index(name_param)]):
-				url=f"http://docker_orion_1:1026/v2/entities/WaterStation:1/attrs/Alert{name_param}"
+				url=f"http://tirociniofiware_orion_1:1026/v2/entities/WaterStation:1/attrs/Alert{name_param}"
 				response = requests.request("DELETE", url)
 				for x in parametri:
 					if int(x[1])<int(threshold[header1.index(name_param)]):
@@ -254,7 +254,7 @@ def create_wait_alert(header):
 						cont_right=-1
 					
 						wait_list.append(f"Waiting for the {name_param} to stabilize.")
-						url = "http://docker_orion_1:1026/v2/op/update"
+						url = "http://tirociniofiware_orion_1:1026/v2/op/update"
 						payload = f"{{\"actionType\":\"APPEND\",\"entities\":[{{\"id\": \"WaterStation:1\", \"type\":\"WaterStation\",\"Wait_{name_param}_Exit_Alert\":{{\"type\":\"Text\",\"value\":\"{wait_list[len(wait_list)-1]}\",\"metadata\":{{\"dateModified\":{{\"type\":\"DateTime\",\"value\":\"{dateModified}\"}}}}}}}}]}}"
 
 						y=json.loads(payload)
@@ -268,7 +268,7 @@ def create_wait_alert(header):
 def obtain_alert_wait():
 	current_alert=[]
 	
-	url = "http://docker_orion_1:1026/v2/entities/WaterStation:1"
+	url = "http://tirociniofiware_orion_1:1026/v2/entities/WaterStation:1"
 	headers = {'header': 'Content-Type: application/json'}
 	response = requests.request("GET", url, headers=headers, verify=False)
 	data=json.loads(response.text.encode('utf-8'))
@@ -317,7 +317,6 @@ cache=redis.Redis(host='redis', port=6379)
 @app.route('/', methods=['GET','POST'])
 
 def pre_app():
-	
 	#array che conterrà il numero totale di sub inviata per ciascuna 
 	timesSent=[]
 	#array che conterrà il nome dei parametri analizzati
@@ -366,4 +365,15 @@ def pre_app():
 			
 			return str(message_out)
 		
+@app.route('/analysis')
+def analysis(header):
+	#array che conterrà il numero totale di sub inviata per ciascuna 
+	timesSent=[]
+	#array che conterrà il nome dei parametri analizzati
+	header=[]
+	#array di ausilio per la pubblicazione all'utente degli alarm
+	ok=[]
+	#ottengo le sub di mio interesse
+	data=get_sub(timesSent,header)
+	return render_template("index.html", data=header)
 			

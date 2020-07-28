@@ -1,6 +1,6 @@
- sudo docker stop docker_web_1
- sudo docker rm docker_web_1
- sudo docker rmi docker_web
+ sudo docker stop tirociniofiware_web_1
+ sudo docker rm tirociniofiware_web_1
+ sudo docker rmi tirociniofiware_web
  sudo docker-compose up -d
 
 
@@ -59,3 +59,25 @@
 }'
 
 "http://quantumleap:8668/v2/notify"
+
+
+    curl -iX POST \
+  --url 'http://localhost:1026/v2/op/update' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "actionType":"append",
+  "entities":[
+    {
+      "id":"WaterStation:1", "type":"WaterStation",
+	"orp":{"type":"Double", "value":1},
+	"temperature":{"type":"Double", "value":12},
+	"tss":{"type":"Double", "value":137},
+	"tds":{"type":"Double", "value":111},
+	"turbidity":{"type":"Double", "value":134},
+	"salinity":{"type":"Double", "value":184},
+	"conductance":{"type":"Double", "value":1454},
+	"conductivity":{"type":"Double", "value":1},
+	"ph":{"type":"Double", "value":144},
+	"dateModified":{"type":"DateTime", "value":"2020-07-08T09:08:00"}
+	
+    }]}'
