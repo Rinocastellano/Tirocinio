@@ -1,4 +1,5 @@
 import redis 
+from string import Template
 from flask import Flask, request, jsonify, render_template
 import time
 import json
@@ -365,8 +366,8 @@ def pre_app():
 			
 			return str(message_out)
 		
-@app.route('/analysis')
-def analysis(header):
+@app.route('/analysis', methods=['GET'])
+def analysis():
 	#array che conterrà il numero totale di sub inviata per ciascuna 
 	timesSent=[]
 	#array che conterrà il nome dei parametri analizzati
@@ -375,5 +376,15 @@ def analysis(header):
 	ok=[]
 	#ottengo le sub di mio interesse
 	data=get_sub(timesSent,header)
-	return render_template("index.html", data=header)
+	
+	output="<!doctype html><html><head><title>Home</title><body><h1>Home page</h1><label>Scegli il parametro da analizzare<<br>select name=\"name\" size=\"8\">" 
+	for name in header:
+		output+=f"<option value=\"{name}\"> {name} </option>"
+	output+="<select></label></body></head></html>"
+	outputHtml=Template(output).safe_substitute()
+	f=open("templates/index.html","w+")
+	f.write(outputHtml)
+	f.close()
+	
+	return render_template("index.html")
 			
