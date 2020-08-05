@@ -8,6 +8,7 @@ import requests
 from crate import client
 import datetime
 import json 
+import os
 
 #Tale funzione ha come scopo quello di controllare se l'utente ha modificato la soglia dei parametri e se è stato cambiato l'indirizzo IP del web server
 #ovviamente tale controllo è effettuato soltanto sulle subscription che comprendono l'expression di superamento soglia
@@ -366,7 +367,7 @@ def pre_app():
 			
 			return str(message_out)
 		
-@app.route('/analysis', methods=['GET'])
+@app.route('/analysis', methods=['GET','POST'])
 def analysis():
 	#array che conterrà il numero totale di sub inviata per ciascuna 
 	timesSent=[]
@@ -377,14 +378,18 @@ def analysis():
 	#ottengo le sub di mio interesse
 	data=get_sub(timesSent,header)
 	
-	output="<!doctype html><html><head><title>Home</title><body><h1>Home page</h1><label>Scegli il parametro da analizzare<<br>select name=\"name\" size=\"8\">" 
+	output="<!doctype html><html><head><title>Home</title><body><h1>Home page</h1><label>Scegli il parametro da analizzare<br><form action="" method=\"post\">" 
 	for name in header:
-		output+=f"<option value=\"{name}\"> {name} </option>"
-	output+="<select></label></body></head></html>"
+		output+=f"<input type=\"radio\" name=\"parameter\" value=\"{name}\"/> {name} "
+	output+="</form><button onClick=\"window.location.reload();\">Reload</button></body></head></html>"
 	outputHtml=Template(output).safe_substitute()
-	f=open("templates/index.html","w+")
-	f.write(outputHtml)
-	f.close()
+	with open("./templates/index.html","a") as output:
+		
+		output.write(outputHtml)
+		
 	
 	return render_template("index.html")
+	
+
+	
 			
