@@ -301,7 +301,49 @@ def obtain_alert_wait():
 
 
 ########################################################################################
-
+#Funzione che mi calcola le varie variabili/condizioni per l'output dei parametri quali:
+#media valori, valore max acquisito, condizione di allarme
+def get_stat_param(name_param):
+	#apertura file Threshold_waterStation
+	with open("./Threshold_WaterStation.csv", newline="",encoding="ISO-8859-1") as filecsv1:
+		
+		lettore1=csv.reader(filecsv1,delimiter=",")
+		header1=next(lettore1)
+		dati1=[row1 for row1 in lettore1]
+		threshold=dati1[0]
+		limit=dati1[1]
+		counter=dati1[2]
+		counter_exit=dati1[3]
+		#dal db di crate ottengo gli utlimi n parametri, definiti sempre nel file di threshold
+		connection=client.connect("http://tirociniofiware_crate_1:4200/#!/tables/doc/etwaterstation")
+		cursor = connection.cursor()
+		cursor.execute(f"SELECT \"time_index\",\"{name_param}\" FROM \"doc\".\"etwaterstation\" where \"{name_param}\">0 order by \"time_index\" desc limit {counter[header1.index(name_param)]};")
+		parametri= cursor.fetchall()
+		y=0
+		#algoritmo di calcol val max e val avg
+		for x in parametri:
+			if int(x[1])>y:
+				max_val=int(x[1])
+			x[1]=int(x[1])+y
+			y=int(x[1])
+		avg_val=y/int(counter[header1.index(name_param)])
+		url = f"http://tirociniofiware_orion_1:1026/v2/entities/WaterStation:1?attrs=Alert{name_param}"
+		headers = {'header': 'Content-Type: application/json'}
+		response = requests.request("GET", url, headers=headers)
+		if "Alert" not in str(response.text.encode("utf-8")):
+			url = f"http://tirociniofiware_orion_1:1026/v2/entities/WaterStation:1?attrs=Wait_alert_{name_param}"
+			headers = {'header': 'Content-Type: application/json'}
+			response = requests.request("GET", url, headers=headers)
+			if "Wait" not in str(response.text.encode("utf-8")):
+				status="<p style=\"color:green;\">Sotto controllo</p>"
+			else:
+				status="<p style=\"color:yellow;\">Attesa uscita</p>"
+		else:
+			status="<p style=\"color:red;\">Alarm!</p>"
+	return max_val,avg_val,status
+		
+		
+		
 	
 ########################################################################################
 
@@ -366,6 +408,8 @@ def pre_app():
 			
 			
 			return str(message_out)
+			
+			
 		
 @app.route('/analysis', methods=['GET','POST'])
 def analysis():
@@ -373,22 +417,30 @@ def analysis():
 	timesSent=[]
 	#array che conterrà il nome dei parametri analizzati
 	header=[]
-	#array di ausilio per la pubblicazione all'utente degli alarm
-	ok=[]
 	#ottengo le sub di mio interesse
 	data=get_sub(timesSent,header)
 	
-	output="<!doctype html><html><head><title>Home</title><body><h1>Home page</h1><label>Scegli il parametro da analizzare<br><form action="" method=\"post\">" 
+	output="<!doctype html><html><head><title>Home</title><body><h1>Home page</h1><label>Scegli il parametro da analizzare<br><form method=\"POST\">" 
 	for name in header:
 		output+=f"<input type=\"radio\" name=\"parameter\" value=\"{name}\"/> {name} "
-	output+="</form><button onClick=\"window.location.reload();\">Reload</button></body></head></html>"
-	outputHtml=Template(output).safe_substitute()
-	with open("./templates/index.html","a") as output:
+	output+="<input type=\"submit\"></form><button onClick=\"window.location.reload();\">Reload</button>"
+	if request.method == 'POST':
+		param=request.form.get('parameter')
+		max_val,avg_val,status=get_stat_param(param)
+		final_str=f"<br><br>Media valori= {avg_val}<br> Val max = {max_val} <br> Status= {status}"
+		output+=final_str
+		output+="</body></head></html>"	
+		outputHtml=Template(output).safe_substitute()
 		
-		output.write(outputHtml)
-		
-	
-	return render_template("index.html")
+		with open("./templates/index.html","a") as output:
+			output.write(outputHtml)
+		return outputHtml
+	elif request.method == "GET":
+		output+="</body></head></html>"	
+		outputHtml=Template(output).safe_substitute()
+		with open("./templates/index.html","a") as output:
+			output.write(outputHtml)
+		return outputHtml
 	
 
 	
