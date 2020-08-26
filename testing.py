@@ -1,43 +1,58 @@
-import csv
-from crate import client
+
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import base64
+import os
 import requests
-with open("./Threshold_WaterStation.csv", newline="",encoding="ISO-8859-1") as filecsv1:
-		
-	name_param="salinity"
-	lettore1=csv.reader(filecsv1,delimiter=",")
-	header1=next(lettore1)
-	dati1=[row1 for row1 in lettore1]
-	threshold=dati1[0]
-	limit=dati1[1]
-	counter=dati1[2]
-	counter_exit=dati1[3]
-	#dal db di crate ottengo gli utlimi n parametri, definiti sempre nel file di threshold
-	connection=client.connect("http://localhost:4200/#!/tables/doc/etwaterstation")
-	cursor = connection.cursor()
-	cursor.execute(f"SELECT \"time_index\",\"{name_param}\" FROM \"doc\".\"etwaterstation\" where \"{name_param}\">0 order by \"time_index\" desc limit {counter[header1.index(name_param)]};")
-	parametri= cursor.fetchall()
-	y=0
-	#algoritmo di calcol val max e val avg
-	for x in parametri:
-		if x[1]>y:
-			max_val=x[1]
-		x[1]+=y
-		y=x[1]
-	avg_val=y/int(counter[header1.index(name_param)])
-	print(avg_val,max_val)
-	url = f"http://localhost:1026/v2/entities/WaterStation:1?attrs=Alert{name_param}"
-	headers = {'header': 'Content-Type: application/json'}
-	response = requests.request("GET", url, headers=headers)
-	if "Alert" not in str(response.text.encode("utf-8")):
-		url = f"http://localhost:1026/v2/entities/WaterStation:1?attrs=Wait_alert_{name_param}"
-		headers = {'header': 'Content-Type: application/json'}
-		response = requests.request("GET", url, headers=headers)
-		if "Wait" not in str(response.text.encode("utf-8")):
-			status="Sotto controllo"
-		else:
-			status="Attesa uscita"
-	else:
-		status="Alarm!"
-	print(status)
-	print(response.text.encode("utf-8"))
-	 
+import json
+import smtplib
+import csv
+
+'''server = smtplib.SMTP('smtp.gmail.com',587)
+server.starttls()
+server.login('tirociniocastellanofiware@gmail.com','pinocchio1')
+
+#sending email
+message=MIMEMultipart('alternative')
+message['From']='tirociniocastellanofiware@gmail.com'
+message['To']='chiara.organari@gmail.com'
+message['Subject']='Prova'
+message.attach(MIMEText('<h1>SONO IL MAGNIFICO RETTORE DELL\'UNIVR DI FERMO E STO PER FARLE UNA GRANDE COMUNICAZIONE</h1><body>No scherzo sono pino e sto facendo una prova se funzione il codice automatico che scrive le mail da sole, ciao bebi </body>', 'html'))
+text=message.as_string()
+server.sendmail('tirociniocastellanofiware@gmail.com', 'chiara.organari@gmail.com', text)
+
+#log out
+server.quit()
+array_role=['0']
+i=0
+field=["account","password","role"]
+with open("./role settings.csv", 'r') as csv_file:
+	reader=csv.DictReader(csv_file)
+	for row in reader:
+		array_role[i]=row
+		print(array_role[i])
+		i+=1
+	for x in range(len(array_role)):
+		print(array_role[x]['account'])
+with open("./role settings.csv","w") as csv_file2:
+	account="ok"
+	password="si"
+	writer=csv.DictWriter(csv_file2, fieldnames=field)
+	writer.writeheader()
+	writer.writerow({'account':account, 'password':password,"role":"admin"})
+	for z in range(len(array_role)):
+		writer.writerow({'account':array_role[z]['account'],'password':array_role[z]['password'],'role':array_role[z]['role']})'''
+json_file=open("./role settings.json", 'r')
+elenco=json.load(json_file)
+json_file.close()
+to='rinoinini'
+json_file2=open("./role settings.json","w")
+new_dict={}
+new_dict['users']=[]
+for user in elenco['users']:
+	new_dict['users'].append({'account':user['account'], 'password':user['password'], 'role':user['role']})	
+new_dict['users'].append({'account':to, 'password':'-',"role":"slave"})
+json.dump(new_dict, json_file2)
+json_file2.close()		

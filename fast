@@ -3,6 +3,12 @@
  sudo docker rmi tirociniofiware_web
  sudo docker-compose up -d
 
+ID CLIENT
+855460548299-g6t4rte41e1fuq1sgnlobnhpi9uc52dr.apps.googleusercontent.com
+
+CLIENT SECRET
+D2DMgqJDMd0iX1rEBdFs2wRe
+
 
      curl -iX POST \
   --url 'http://localhost:1026/v2/op/update' \
@@ -69,15 +75,15 @@
   "entities":[
     {
       "id":"WaterStation:1", "type":"WaterStation",
-	"orp":{"type":"Double", "value":1},
-	"temperature":{"type":"Double", "value":12},
-	"tss":{"type":"Double", "value":137},
-	"tds":{"type":"Double", "value":111},
-	"turbidity":{"type":"Double", "value":134},
-	"salinity":{"type":"Double", "value":184},
-	"conductance":{"type":"Double", "value":1454},
-	"conductivity":{"type":"Double", "value":1},
-	"ph":{"type":"Double", "value":144},
-	"dateModified":{"type":"DateTime", "value":"2020-07-08T09:08:00"}
+	"orp":{"type":"Double", "value":100},
+	"temperature":{"type":"Double", "value":15},
+	"tss":{"type":"Double", "value":9},
+	"tds":{"type":"Double", "value":11},
+	"turbidity":{"type":"Double", "value":13},
+	"salinity":{"type":"Double", "value":84},
+	"conductance":{"type":"Double", "value":154},
+	"conductivity":{"type":"Double", "value":100},
+	"ph":{"type":"Double", "value":0},
+	"dateModified":{"type":"DateTime", "value":"2020-08-10T09:08:00"}
 	
     }]}'
