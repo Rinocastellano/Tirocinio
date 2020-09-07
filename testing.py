@@ -10,22 +10,24 @@ import json
 import smtplib
 import csv
 
-'''server = smtplib.SMTP('smtp.gmail.com',587)
+server = smtplib.SMTP('smtp.gmail.com',587)
 server.starttls()
 server.login('tirociniocastellanofiware@gmail.com','pinocchio1')
 
 #sending email
 message=MIMEMultipart('alternative')
 message['From']='tirociniocastellanofiware@gmail.com'
-message['To']='chiara.organari@gmail.com'
+message['To']='rinocastel505@gmail.com'
 message['Subject']='Prova'
 message.attach(MIMEText('<h1>SONO IL MAGNIFICO RETTORE DELL\'UNIVR DI FERMO E STO PER FARLE UNA GRANDE COMUNICAZIONE</h1><body>No scherzo sono pino e sto facendo una prova se funzione il codice automatico che scrive le mail da sole, ciao bebi </body>', 'html'))
 text=message.as_string()
-server.sendmail('tirociniocastellanofiware@gmail.com', 'chiara.organari@gmail.com', text)
+server.sendmail('tirociniocastellanofiware@gmail.com', 'rinocastel505@gmail.com', text)
 
 #log out
 server.quit()
-array_role=['0']
+
+
+'''array_role=['0']
 i=0
 field=["account","password","role"]
 with open("./role settings.csv", 'r') as csv_file:
@@ -43,7 +45,7 @@ with open("./role settings.csv","w") as csv_file2:
 	writer.writeheader()
 	writer.writerow({'account':account, 'password':password,"role":"admin"})
 	for z in range(len(array_role)):
-		writer.writerow({'account':array_role[z]['account'],'password':array_role[z]['password'],'role':array_role[z]['role']})'''
+		writer.writerow({'account':array_role[z]['account'],'password':array_role[z]['password'],'role':array_role[z]['role']})
 json_file=open("./role settings.json", 'r')
 elenco=json.load(json_file)
 json_file.close()
@@ -55,4 +57,4 @@ for user in elenco['users']:
 	new_dict['users'].append({'account':user['account'], 'password':user['password'], 'role':user['role']})	
 new_dict['users'].append({'account':to, 'password':'-',"role":"slave"})
 json.dump(new_dict, json_file2)
-json_file2.close()		
+json_file2.close()'''		

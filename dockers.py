@@ -9,7 +9,13 @@ from crate import client
 import datetime
 import json 
 import os
-import notification_system
+import smtplib
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import base64
+from flask_mail import Mail, Message
 
 #Tale funzione ha come scopo quello di controllare se l'utente ha modificato la soglia dei parametri e se è stato cambiato l'indirizzo IP del web server
 #ovviamente tale controllo è effettuato soltanto sulle subscription che comprendono l'expression di superamento soglia
@@ -149,10 +155,15 @@ def case_post(timesSent,timesSent1,data):
 						
 						#controllo sul trend parametri. Tale controllo è utile ai fini del contenuto dell'alert
 						if cont > int(limit[header1.index(name_param)]):
-							alert_list.append(f"Anomaly in the trend param of {name_param}, exceeding threshold confirmed")
+							
+							text=f"Anomaly in the trend param of {name_param}, exceeding threshold confirmed"
+							alert_list.append(text)
+							email_notification(text)
 						
 						else:
-							alert_list.append(f"Anomaly value of {name_param}, not anomaly trend. Only {cont} exceeding.")
+							text=f"Anomaly value of {name_param}, not anomaly trend. Only {cont} exceeding."
+							alert_list.append(text)
+							email_notification(text)
 
 						#Pubblichiamo un alert
 						
@@ -353,20 +364,76 @@ def writing_file(user,elenco):
 	new_dict={}
 	new_dict['users']=[]
 	for old_user in elenco['users']:
-		new_dict['users'].append({'account':old_user['account'], 'password':old_user['password'], 'role':old_user['role']})
+		if user[2]=="admin":
+			if old_user["role"]=="admin":		
+				print("Non considerato")
+			else: 
+				new_dict['users'].append({'account':old_user['account'], 'password':old_user['password'], 'role':old_user['role']})
+		else:
+			new_dict['users'].append({'account':old_user['account'], 'password':old_user['password'], 'role':old_user['role']})
 	
 	new_dict['users'].append({'account':user[0], 'password':user[1],"role":user[2]})
 	with open("./role settings.json","w") as json_file1:
 		json.dump(new_dict, json_file1)	
+		
+		
+####################################################################################################
+#Funzione che invia le mail
+def email_notification(text):
+	with open("role settings.json","r") as json_file:
+		elenco=json.load(json_file)
+		cont=0
+		admin=None
+		password=None
+		account_admin=None
+		recipients_user=[]
+		#server = smtplib.SMTP('smtp.gmail.com',587)
+		#server.starttls()
+		app.config['MAIL_SERVER']='smtp.gmail.com'
+		app.config['MAIL_PORT']=465
+		for user in elenco["users"]:
+			
+			if user["role"] == "admin":
+				admin=user['account']
+				password=user['password']
 
+		if cont==0:
+			return
+		app.config['MAIL_USERNAME']=admin
+		app.config['MAIL_PASSWORD']=password
+		app.config['MAIL_USE_TLS']=False
+		app.config['MAIL_USE_SSL']=True
+		mail=Mail(app)
+		#server.login(admin,password)
+		#sending email
+		for user in elenco["users"]:
+			if user["role"]=="slave":
+				if user['account']!="default":
+					recipients_user.append(user['account'])
+		msg=Message('Alert', sender=admin,recipients=recipients_user)
+		msg.body=text
+		mail.send(msg)
+		#		message=MIMEMultipart('alternative')
+		#		message['From']=admin
+		#		message['To']=user["account"]
+		#		message['Subject']='Avviso di allarme'
+		#		message.attach(MIMEText(text, 'html'))
+		#		text=message.as_string()
+		#		server.sendmail(account_admin, user["account"], text)
+
+		#log out	
+		#server.quit()
+	
 ####################################################################################################
 
 
 
 
 app=Flask(__name__)
+mail=Mail(app)
 cache=redis.Redis(host='redis', port=6379)
-global admin
+if __name__=="__main__":
+	app.run(debug=True)
 
 
 @app.route('/', methods=['GET','POST'])
